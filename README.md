@@ -26,5 +26,8 @@ cd mini-security-scanner
 # Gereksinimleri yükle
 pip install -r requirements.txt
 
-# Veya direkt kurulum
+# direkt kurulum
 python setup.py install
+
+#son adım
+python scanner.py
