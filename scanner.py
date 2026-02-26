@@ -1,8 +1,12 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+
+import os
+import sys
+import time
 import argparse
 import requests
 import urllib.parse
-import time
-import sys
 import concurrent.futures
 from urllib.parse import urljoin, urlparse
 from bs4 import BeautifulSoup
@@ -44,6 +48,45 @@ class Scanner:
         if self.verbose:
             print(f"{Fore.CYAN}[*] {message}{Style.RESET_ALL}")
         Utils.log(message, level)
+    
+    def clear_screen(self):
+        os.system('cls' if os.name == 'nt' else 'clear')
+    
+    def print_banner(self):
+        banner = f"""
+{Fore.RED}╔══════════════════════════════════════════════════════════╗
+{Fore.RED}║  {Fore.WHITE}███╗   ███╗██╗███╗   ██╗██╗     ███████╗███████╗{Fore.RED}  ║
+{Fore.RED}║  {Fore.WHITE}████╗ ████║██║████╗  ██║██║     ██╔════╝██╔════╝{Fore.RED}  ║
+{Fore.RED}║  {Fore.WHITE}██╔████╔██║██║██╔██╗ ██║██║     █████╗  ███████╗{Fore.RED}  ║
+{Fore.RED}║  {Fore.WHITE}██║╚██╔╝██║██║██║╚██╗██║██║     ██╔══╝  ╚════██║{Fore.RED}  ║
+{Fore.RED}║  {Fore.WHITE}██║ ╚═╝ ██║██║██║ ╚████║███████╗███████╗███████║{Fore.RED}  ║
+{Fore.RED}║  {Fore.WHITE}╚═╝     ╚═╝╚═╝╚═╝  ╚═══╝╚══════╝╚══════╝╚══════╝{Fore.RED}  ║
+{Fore.RED}║                                                              ║
+{Fore.RED}║  {Fore.GREEN}Web Security Scanner v{VERSION}{Fore.RED}                                      ║
+{Fore.RED}║  {Fore.YELLOW}Termux & Windows Uyumlu{Fore.RED}                                         ║
+{Fore.RED}╚══════════════════════════════════════════════════════════╝{Style.RESET_ALL}
+"""
+        print(banner)
+    
+    def print_menu(self):
+        print(f"\n{Fore.CYAN}╔════════════════════════════════════╗{Style.RESET_ALL}")
+        print(f"{Fore.CYAN}║         ANA MENÜ                  ║{Style.RESET_ALL}")
+        print(f"{Fore.CYAN}╠════════════════════════════════════╣{Style.RESET_ALL}")
+        print(f"{Fore.CYAN}║ {Fore.WHITE}[1] {Fore.GREEN}Tek URL Tara{Fore.CYAN}                    ║{Style.RESET_ALL}")
+        print(f"{Fore.CYAN}║ {Fore.WHITE}[2] {Fore.GREEN}URL Listesi Tara{Fore.CYAN}                 ║{Style.RESET_ALL}")
+        print(f"{Fore.CYAN}║ {Fore.WHITE}[3] {Fore.GREEN}Ayarlar{Fore.CYAN}                          ║{Style.RESET_ALL}")
+        print(f"{Fore.CYAN}║ {Fore.WHITE}[4] {Fore.GREEN}Çıkış{Fore.CYAN}                            ║{Style.RESET_ALL}")
+        print(f"{Fore.CYAN}╚════════════════════════════════════╝{Style.RESET_ALL}")
+    
+    def print_settings(self, threads, delay, proxy):
+        print(f"\n{Fore.YELLOW}╔════════════════════════════════════╗{Style.RESET_ALL}")
+        print(f"{Fore.YELLOW}║         AYARLAR                   ║{Style.RESET_ALL}")
+        print(f"{Fore.YELLOW}╠════════════════════════════════════╣{Style.RESET_ALL}")
+        print(f"{Fore.YELLOW}║ {Fore.WHITE}[1] Thread Sayısı: {Fore.GREEN}{threads}{Fore.YELLOW}               ║{Style.RESET_ALL}")
+        print(f"{Fore.YELLOW}║ {Fore.WHITE}[2] Delay: {Fore.GREEN}{delay}s{Fore.YELLOW}                         ║{Style.RESET_ALL}")
+        print(f"{Fore.YELLOW}║ {Fore.WHITE}[3] Proxy: {Fore.GREEN}{proxy or 'Yok'}{Fore.YELLOW}              ║{Style.RESET_ALL}")
+        print(f"{Fore.YELLOW}║ {Fore.WHITE}[4] Ana Menü{Fore.YELLOW}                        ║{Style.RESET_ALL}")
+        print(f"{Fore.YELLOW}╚════════════════════════════════════╝{Style.RESET_ALL}")
     
     def crawl_target(self, target):
         try:
@@ -203,14 +246,14 @@ class Scanner:
         except Exception as e:
             self.log(f"Form test hatası: {str(e)}", 'error')
     
-    def run(self):
-        print(f"\n{Fore.GREEN}╔════════════════════════════════════╗{Style.RESET_ALL}")
-        print(f"{Fore.GREEN}║     WebSecScanner v{VERSION}          ║{Style.RESET_ALL}")
-        print(f"{Fore.GREEN}╚════════════════════════════════════╝{Style.RESET_ALL}\n")
+    def run_scan(self, targets):
+        self.clear_screen()
+        self.print_banner()
+        print(f"\n{Fore.YELLOW}[+] Tarama başlatılıyor...{Style.RESET_ALL}")
         
         start = time.time()
         
-        for target in self.targets:
+        for target in targets:
             self.crawl_target(target)
         
         self.log(f"{len(self.discovered_urls)} URL taranıyor...")
@@ -239,21 +282,108 @@ class Scanner:
         
         if self.output:
             Report.save(self.results, self.output)
+            print(f"{Fore.GREEN}[+] Rapor kaydedildi: {self.output}{Style.RESET_ALL}")
         
-        return self.results
+        input(f"\n{Fore.YELLOW}[+] Devam etmek için Enter'a basın...{Style.RESET_ALL}")
+    
+    def interactive_mode(self):
+        threads = MAX_THREADS
+        delay = 0
+        proxy = None
+        
+        while True:
+            self.clear_screen()
+            self.print_banner()
+            self.print_menu()
+            
+            choice = input(f"\n{Fore.GREEN}[?] Seçiminiz: {Style.RESET_ALL}").strip()
+            
+            if choice == '1':
+                self.clear_screen()
+                self.print_banner()
+                url = input(f"\n{Fore.GREEN}[?] Hedef URL: {Style.RESET_ALL}").strip()
+                if url:
+                    output = input(f"{Fore.GREEN}[?] Çıktı dosyası (boş geçebilirsiniz): {Style.RESET_ALL}").strip()
+                    self.output = output if output else None
+                    self.run_scan([url])
+            
+            elif choice == '2':
+                self.clear_screen()
+                self.print_banner()
+                list_file = input(f"\n{Fore.GREEN}[?] URL listesi dosyası: {Style.RESET_ALL}").strip()
+                if list_file and os.path.exists(list_file):
+                    with open(list_file, 'r') as f:
+                        targets = [line.strip() for line in f if line.strip()]
+                    output = input(f"{Fore.GREEN}[?] Çıktı dosyası (boş geçebilirsiniz): {Style.RESET_ALL}").strip()
+                    self.output = output if output else None
+                    self.run_scan(targets)
+                else:
+                    print(f"{Fore.RED}[!] Dosya bulunamadı!{Style.RESET_ALL}")
+                    time.sleep(2)
+            
+            elif choice == '3':
+                while True:
+                    self.clear_screen()
+                    self.print_banner()
+                    self.print_settings(threads, delay, proxy)
+                    
+                    setting = input(f"\n{Fore.GREEN}[?] Seçiminiz: {Style.RESET_ALL}").strip()
+                    
+                    if setting == '1':
+                        try:
+                            new_threads = int(input(f"{Fore.GREEN}[?] Thread sayısı (1-20): {Style.RESET_ALL}").strip())
+                            if 1 <= new_threads <= 20:
+                                threads = new_threads
+                                self.threads = threads
+                        except:
+                            pass
+                    
+                    elif setting == '2':
+                        try:
+                            new_delay = float(input(f"{Fore.GREEN}[?] Delay (saniye): {Style.RESET_ALL}").strip())
+                            if new_delay >= 0:
+                                delay = new_delay
+                                self.delay = delay
+                        except:
+                            pass
+                    
+                    elif setting == '3':
+                        new_proxy = input(f"{Fore.GREEN}[?] Proxy (örn: http://127.0.0.1:8080): {Style.RESET_ALL}").strip()
+                        proxy = new_proxy if new_proxy else None
+                        self.session.proxies.update({'http': proxy, 'https': proxy}) if proxy else None
+                    
+                    elif setting == '4':
+                        break
+                    
+                    else:
+                        print(f"{Fore.RED}[!] Geçersiz seçim!{Style.RESET_ALL}")
+                        time.sleep(1)
+            
+            elif choice == '4':
+                print(f"\n{Fore.YELLOW}[+] Çıkılıyor...{Style.RESET_ALL}")
+                sys.exit(0)
+            
+            else:
+                print(f"{Fore.RED}[!] Geçersiz seçim!{Style.RESET_ALL}")
+                time.sleep(1)
 
 def main():
-    p = argparse.ArgumentParser(description='WebSecScanner - Web Güvenlik Tarama Aracı')
-    p.add_argument('-u', '--url', help='Hedef URL')
-    p.add_argument('-l', '--list', help='URL listesi dosyası')
-    p.add_argument('-v', '--verbose', action='store_true', help='Detaylı çıktı')
-    p.add_argument('-o', '--output', help='Çıktı dosyası (json/csv)')
-    p.add_argument('-t', '--threads', type=int, default=MAX_THREADS, help='Thread sayısı')
-    p.add_argument('--proxy', help='Proxy (ör: http://127.0.0.1:8080)')
-    p.add_argument('--delay', type=float, default=0, help='İstekler arası bekleme (saniye)')
-    p.add_argument('--version', action='version', version=f'WebSecScanner v{VERSION}')
+    parser = argparse.ArgumentParser(description='WebSecScanner - Web Güvenlik Tarama Aracı')
+    parser.add_argument('-u', '--url', help='Hedef URL')
+    parser.add_argument('-l', '--list', help='URL listesi dosyası')
+    parser.add_argument('-v', '--verbose', action='store_true', help='Detaylı çıktı')
+    parser.add_argument('-o', '--output', help='Çıktı dosyası (json/csv/html/txt)')
+    parser.add_argument('-t', '--threads', type=int, default=MAX_THREADS, help='Thread sayısı')
+    parser.add_argument('--proxy', help='Proxy (ör: http://127.0.0.1:8080)')
+    parser.add_argument('--delay', type=float, default=0, help='İstekler arası bekleme (saniye)')
+    parser.add_argument('--interactive', action='store_true', help='İnteraktif mod')
     
-    args = p.parse_args()
+    args = parser.parse_args()
+    
+    if args.interactive or len(sys.argv) == 1:
+        s = Scanner([], args.verbose, args.output, args.threads, args.proxy, args.delay)
+        s.interactive_mode()
+        return
     
     targets = []
     if args.url:
@@ -268,16 +398,15 @@ def main():
     
     if not targets:
         print(f"{Fore.RED}[!] Hedef belirtilmedi{Style.RESET_ALL}")
-        p.print_help()
+        parser.print_help()
         return
     
-    try:
-        s = Scanner(targets, args.verbose, args.output, args.threads, args.proxy, args.delay)
-        s.run()
-    except KeyboardInterrupt:
-        print(f"\n{Fore.YELLOW}[!] Durduruldu{Style.RESET_ALL}")
-    except Exception as e:
-        print(f"{Fore.RED}[!] Hata: {str(e)}{Style.RESET_ALL}")
+    s = Scanner(targets, args.verbose, args.output, args.threads, args.proxy, args.delay)
+    s.run_scan(targets)
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except KeyboardInterrupt:
+        print(f"\n{Fore.YELLOW}[!] Durduruldu{Style.RESET_ALL}")
+        sys.exit(0)
